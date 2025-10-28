@@ -22,7 +22,7 @@ const Hero: React.FC = () => (
           </div>
         </div>
         <div className="relative">
-          <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-xl ring-1 ring-emerald-200/60">
+          <div className="aspect-[4/2] rounded-3xl overflow-hidden shadow-xl ring-1 ring-emerald-200/60">
             <img src="https://images7.alphacoders.com/878/thumb-1920-878137.jpg" alt="Plant hero" className="h-full w-full object-cover"/>
           </div>
           <div className="absolute -bottom-6 -left-6 bg-white dark:bg-gray-900 rounded-2xl shadow-xl ring-1 ring-emerald-200/60 p-4 flex items-center gap-3">

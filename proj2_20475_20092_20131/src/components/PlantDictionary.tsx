@@ -1,39 +1,51 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-// ...
-<Link
-  to="/"
-  className="mb-4 inline-block px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
->
-  ◀ กลับหน้าแรก
-</Link>
-export type Plant = {
+// PlantDictionary.tsx
+
+import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+
+/**
+ * 🌿 Type Definitions
+ * Define the structure for Plant and its Care details for strong typing.
+ */
+interface PlantCare {
+  light: string;
+  water: string;
+  humidity: string;
+  soil: string;
+  fertilizer: string;
+  repotEvery: string;
+  difficulty: string;
+}
+
+interface Plant {
   id: number;
   name: string;
-  scientificName?: string;
+  scientificName: string;
   price: number;
   img: string;
   tag: string;
   shortDesc: string;
-  origin?: string;
-  description?: string;
-  care?: {
-    light: string;
-    water: string;
-    humidity: string;
-    soil: string;
-    fertilizer: string;
-    repotEvery: string;
-    difficulty: "ง่าย" | "ปานกลาง" | "ยาก";
-  };
-  toxicity?: string;
-  benefits?: string[];
-  size?: string;
-  pests?: string[];
-  propagation?: string;
-};
+  origin: string;
+  description: string;
+  care: PlantCare;
+  toxicity: string;
+  benefits: string[];
+  size: string;
+  pests: string[];
+  propagation: string;
+}
 
-const plants: Plant[] = [
+/**
+ * 🛠️ Utility Functions
+ */
+const currency = (n: number): string =>
+  n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
+
+/**
+ * 🪴 Data Source
+ * Note: In a real application, this data would typically be fetched from an API.
+ */
+const PLANTS_DATA: Plant[] = [
   {
     id: 1,
     name: "Monstera Deliciosa",
@@ -73,7 +85,8 @@ const plants: Plant[] = [
     description:
       "Fiddle Leaf Fig เป็นต้นไม้ที่ได้รับความนิยมสูงในการแต่งบ้านสไตล์มินิมอลและสตูดิโอ เพราะใบรูปคล้ายไวโอลินให้ความรู้สึกหรูหรา ต้องการแสงสว่างสม่ำเสมอและการดูแลที่พอเหมาะ",
     care: {
-      light: "ชอบแสงสว่างจ้าแบบกรองแสง ต้องวางใกล้หน้าต่างที่ได้แสงสว่างแต่ไม่โดนแดดจ้าโดยตรง",
+      light:
+        "ชอบแสงสว่างจ้าแบบกรองแสง ต้องวางใกล้หน้าต่างที่ได้แสงสว่างแต่ไม่โดนแดดจ้าโดยตรง",
       water: "รดเมื่อดินด้านบนแห้ง อย่าให้แฉะ",
       humidity: "ชอบความชื้นปานกลาง",
       soil: "ดินระบายน้ำดี ผสมเพอร์ไลต์",
@@ -349,199 +362,410 @@ const plants: Plant[] = [
   },
 ];
 
-const currency = (n: number) => n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
-
-const PlantDictionary: React.FC = () => {
-  const [selected, setSelected] = useState<Plant | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  useEffect(() => {
-    // lock scroll when modal open
-    document.body.style.overflow = isOpen ? "hidden" : "auto";
-  }, [isOpen]);
-
-  const openModal = (p: Plant) => {
-    setSelected(p);
-    setIsOpen(true);
+/**
+ * 🪴 Plant Card Component
+ */
+const PlantCard: React.FC<{
+  plant: Plant;
+  onOpenModal: (id: number) => void;
+}> = ({ plant, onOpenModal }) => {
+  const handleClick = (
+    e: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>
+  ) => {
+    e.preventDefault();
+    onOpenModal(plant.id);
   };
 
-  const closeModal = () => {
-    setIsOpen(false);
-    setSelected(null);
-  };
-
+  // Add transition and hover effects using Tailwind classes
   return (
-    <div className="p-6 bg-white min-h-screen text-gray-800">
-      <h1 className="text-3xl font-semibold mb-4">Plant Dictionary 🌿</h1>
-
-      <p className="text-sm text-gray-600 mb-6">คลิกการ์ดเพื่อดูรายละเอียดเต็ม — โมดอลสไตล์ Minimal + White</p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {plants.map((p) => (
-          <article
-            key={p.id}
-            className="border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white cursor-pointer"
-            onClick={() => openModal(p)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") openModal(p);
-            }}
-          >
-            <div className="h-40 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
-              <img src={p.img} alt={p.name} className="object-cover h-full w-full" />
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-lg font-medium">{p.name}</h2>
-                  <p className="text-xs text-gray-500">{p.scientificName}</p>
-                </div>
-                <span className="text-sm px-2 py-1 rounded-md bg-green-50 text-green-700">{p.tag}</span>
-              </div>
-
-              <p className="text-sm text-gray-600 mt-2">{p.shortDesc}</p>
-
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-sm font-semibold">{currency(p.price)}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openModal(p);
-                  }}
-                  className="text-sm bg-gray-100 px-3 py-1 rounded-md hover:bg-gray-200"
-                  aria-label={`ดูรายละเอียด ${p.name}`}
-                >
-                  รายละเอียด
-                </button>
-              </div>
-            </div>
-          </article>
-        ))}
+    <article
+      className="border rounded-xl overflow-hidden shadow-sm bg-white cursor-pointer 
+                 transition-all duration-300 ease-in-out transform hover:scale-[1.02] hover:shadow-lg"
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") handleClick(e);
+      }}
+    >
+      <div className="h-40 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+        {/* Use object-cover for a slightly more modern look, or keep object-contain for full image */}
+        <img
+          src={plant.img}
+          alt={plant.name}
+          className="object-cover h-full w-full"
+        />
       </div>
-
-      {/* Modal (Minimal + White) */}
-      {isOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30" onClick={closeModal} aria-hidden />
-
-          <div
-            className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-medium">{plant.name}</h2>
+            <p className="text-xs text-gray-500">
+              {plant.scientificName || ""}
+            </p>
+          </div>
+          <span className="text-sm px-2 py-1 rounded-md bg-green-50 text-green-700">
+            {plant.tag}
+          </span>
+        </div>
+        <p className="text-sm text-gray-600 mt-2">{plant.shortDesc}</p>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-sm font-semibold">{currency(plant.price)}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent the article's onClick from firing twice
+              onOpenModal(plant.id);
+            }}
+            className="text-sm bg-gray-100 px-3 py-1 rounded-md hover:bg-gray-200 transition-colors duration-200"
+            aria-label={`ดูรายละเอียด ${plant.name}`}
           >
-            <div className="flex justify-between items-start p-6 border-b">
-              <div>
-                <h3 id="modal-title" className="text-2xl font-semibold">
-                  {selected.name}
-                </h3>
-                <p className="text-xs text-gray-500">{selected.scientificName} • {selected.origin}</p>
-              </div>
+            รายละเอียด
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+};
 
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-sm text-gray-500">ราคา</div>
-                  <div className="font-semibold">{currency(selected.price)}</div>
-                </div>
-                <button
-                  onClick={closeModal}
-                  className="p-2 rounded-md hover:bg-gray-100"
-                  aria-label="ปิดหน้าต่าง"
-                >
-                  ✕
-                </button>
+// --- Animation CSS Helper Class Definitions ---
+// In a real Tailwind project, you'd use @layer directives or JIT mode configuration.
+// Here, we define the necessary classes that Tailwind *doesn't* provide by default for transitions.
+// We use a CSS string to define the required states for a simple fade/scale transition.
+
+const MODAL_TRANSITION_STYLES = `
+.modal-transition-container {
+  /* Initial state: Hidden and slightly scaled down */
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+.modal-open .modal-transition-container {
+  /* Open state: Visible and at full scale */
+  opacity: 1;
+  transform: scale(1);
+}
+.modal-overlay-transition {
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+}
+.modal-open .modal-overlay-transition {
+  opacity: 1;
+}
+`;
+
+// To ensure the styles are applied, we'll inject a <style> tag.
+// In a proper React/Tailwind setup, this is usually unnecessary, but it's required for this one-file execution.
+// We only inject it once.
+let styleInjected = false;
+const injectModalStyles = () => {
+  if (typeof document !== "undefined" && !styleInjected) {
+    const style = document.createElement("style");
+    style.textContent = MODAL_TRANSITION_STYLES;
+    document.head.appendChild(style);
+    styleInjected = true;
+  }
+};
+injectModalStyles();
+
+/**
+ * 💻 Modal Component (Portalled)
+ * The modal now uses the 'modal-open' class on the top-level div
+ * to trigger the CSS transitions defined above.
+ */
+const PlantModal: React.FC<{
+  selectedPlant: Plant | null;
+  onClose: () => void;
+  isModalOpen: boolean;
+}> = ({ selectedPlant, onClose, isModalOpen }) => {
+  const [shouldRender, setShouldRender] = useState(false);
+  const duration = 300; // Match CSS transition duration
+
+  // This useEffect handles the mounting/unmounting with animation delays
+  useEffect(() => {
+    if (isModalOpen) {
+      setShouldRender(true); // Mount content immediately
+    } else if (shouldRender) {
+      // Unmount content after the exit animation completes
+      const timeoutId = setTimeout(() => {
+        setShouldRender(false);
+      }, duration);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isModalOpen, shouldRender]);
+
+  if (!shouldRender || !selectedPlant) return null;
+
+  // Add 'modal-open' class conditionally for CSS transitions
+  const modalWrapperClass = `fixed inset-0 z-50 flex items-center justify-center p-4 ${
+    isModalOpen ? "modal-open" : ""
+  }`;
+
+  const modalContent = (
+    <div id="plant-modal" className={modalWrapperClass}>
+      <div
+        id="modal-overlay"
+        className="absolute inset-0 bg-black/30 modal-overlay-transition"
+        aria-hidden
+        onClick={onClose}
+      ></div>
+
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto modal-transition-container"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        <div className="flex justify-between items-start p-6 border-b">
+          <div>
+            <h3 id="modal-title" className="text-2xl font-semibold">
+              {selectedPlant.name}
+            </h3>
+            <p className="text-xs text-gray-500">
+              <span id="modal-scientific">
+                {selectedPlant.scientificName || "N/A"}
+              </span>{" "}
+              •<span id="modal-origin">{selectedPlant.origin || "N/A"}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-sm text-gray-500">ราคา</div>
+              <div id="modal-price" className="font-semibold">
+                {currency(selectedPlant.price)}
               </div>
             </div>
+            <button
+              onClick={onClose}
+              className="js-close-modal p-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
+              aria-label="ปิดหน้าต่าง"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
 
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1">
-                <img src={selected.img} alt={selected.name} className="w-full rounded-lg object-cover h-64" />
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-1">
+            <img
+              id="modal-img"
+              src={selectedPlant.img}
+              alt={selectedPlant.name}
+              className="w-full rounded-lg object-contain h-64"
+            />
 
-                <div className="mt-4 space-y-2 text-sm text-gray-700">
-                  <div>
-                    <strong>Tag:</strong> {selected.tag}
-                  </div>
-                  <div>
-                    <strong>ขนาด:</strong> {selected.size}
-                  </div>
-                  <div>
-                    <strong>พิษ:</strong> {selected.toxicity}
-                  </div>
-                  <div>
-                    <strong>การขยายพันธุ์:</strong> {selected.propagation}
-                  </div>
-                </div>
+            <div className="mt-4 space-y-2 text-sm text-gray-700">
+              <div>
+                <strong>Tag:</strong>{" "}
+                <span id="modal-tag">{selectedPlant.tag}</span>
               </div>
-
-              <div className="md:col-span-2">
-                <section className="mb-4">
-                  <h4 className="text-lg font-medium">คำอธิบาย</h4>
-                  <p className="text-gray-700 mt-2">{selected.description}</p>
-                </section>
-
-                <section className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <h5 className="font-medium">การดูแล (Care)</h5>
-                    <ul className="mt-2 text-sm text-gray-700 space-y-1">
-                      <li><strong>แสง:</strong> {selected.care?.light}</li>
-                      <li><strong>การรดน้ำ:</strong> {selected.care?.water}</li>
-                      <li><strong>ความชื้น:</strong> {selected.care?.humidity}</li>
-                      <li><strong>ดินที่แนะนำ:</strong> {selected.care?.soil}</li>
-                      <li><strong>ปุ๋ย:</strong> {selected.care?.fertilizer}</li>
-                      <li><strong>เปลี่ยนกระถาง:</strong> {selected.care?.repotEvery}</li>
-                      <li><strong>ระดับความยาก:</strong> {selected.care?.difficulty}</li>
-                    </ul>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <h5 className="font-medium">ประโยชน์ & ศักยภาพ</h5>
-                    <ul className="mt-2 text-sm text-gray-700 list-disc list-inside space-y-1">
-                      {selected.benefits?.map((b, i) => (
-                        <li key={i}>{b}</li>
-                      ))}
-                    </ul>
-
-                    <div className="mt-3">
-                      <strong>ปัญหาที่พบบ่อย:</strong>
-                      <ul className="mt-1 text-sm list-disc list-inside">
-                        {selected.pests?.map((pest, idx) => (
-                          <li key={idx}>{pest}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="mb-6">
-                  <h5 className="font-medium">คำแนะนำเพิ่มเติม</h5>
-                  <ul className="mt-2 text-sm text-gray-700 space-y-2">
-                    <li>
-                      • ตรวจใบสม่ำเสมอ ถ้าใบเหลืองอาจเกิดจากการรดน้ำมากหรือน้อยเกินไป
-                    </li>
-                    <li>• หลีกเลี่ยงการเปลี่ยนตำแหน่งบ่อยเกินไป เพราะต้นอาจเครียด</li>
-                    <li>• ใช้ปุ๋ยเจือจางตามคำแนะนำเพื่อไม่ให้รากช็อก</li>
-                    <li>• หากมีสัตว์เลี้ยง ควรวางต้นให้พ้นมือแมว/สุนัขหรือตรวจสอบความเป็นพิษก่อน</li>
-                  </ul>
-                </section>
-
-                <div className="flex gap-3">
-                  <button className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700">เพิ่มลงตะกร้า</button>
-                  <button onClick={closeModal} className="px-4 py-2 rounded-md border">ปิด</button>
-                </div>
+              <div>
+                <strong>ขนาด:</strong>{" "}
+                <span id="modal-size">{selectedPlant.size || "N/A"}</span>
+              </div>
+              <div>
+                <strong>พิษ:</strong>{" "}
+                <span id="modal-toxicity">
+                  {selectedPlant.toxicity || "N/A"}
+                </span>
+              </div>
+              <div>
+                <strong>การขยายพันธุ์:</strong>{" "}
+                <span id="modal-propagation">
+                  {selectedPlant.propagation || "N/A"}
+                </span>
               </div>
             </div>
           </div>
+
+          <div className="md:col-span-2">
+            <section className="mb-4">
+              <h4 className="text-lg font-medium">คำอธิบาย</h4>
+              <p id="modal-desc" className="text-gray-700 mt-2">
+                {selectedPlant.description || "N/A"}
+              </p>
+            </section>
+
+            <section className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg">
+                <h5 className="font-medium">การดูแล (Care)</h5>
+                <ul
+                  id="modal-care-list"
+                  className="mt-2 text-sm text-gray-700 space-y-1"
+                >
+                  <li>
+                    <strong>แสง:</strong> {selectedPlant.care?.light}
+                  </li>
+                  <li>
+                    <strong>การรดน้ำ:</strong> {selectedPlant.care?.water}
+                  </li>
+                  <li>
+                    <strong>ความชื้น:</strong> {selectedPlant.care?.humidity}
+                  </li>
+                  <li>
+                    <strong>ดินที่แนะนำ:</strong> {selectedPlant.care?.soil}
+                  </li>
+                  <li>
+                    <strong>ปุ๋ย:</strong> {selectedPlant.care?.fertilizer}
+                  </li>
+                  <li>
+                    <strong>เปลี่ยนกระถาง:</strong>{" "}
+                    {selectedPlant.care?.repotEvery}
+                  </li>
+                  <li>
+                    <strong>ระดับความยาก:</strong>{" "}
+                    {selectedPlant.care?.difficulty}
+                  </li>
+                </ul>
+              </div>
+
+              <div className="p-4 border rounded-lg">
+                <h5 className="font-medium">ประโยชน์ & ศักยภาพ</h5>
+                <ul
+                  id="modal-benefits-list"
+                  className="mt-2 text-sm text-gray-700 list-disc list-inside space-y-1"
+                >
+                  {selectedPlant.benefits?.map((b, index) => (
+                    <li key={index}>{b}</li>
+                  ))}
+                </ul>
+
+                <div className="mt-3">
+                  <strong>ปัญหาที่พบบ่อย:</strong>
+                  <ul
+                    id="modal-pests-list"
+                    className="mt-1 text-sm list-disc list-inside"
+                  >
+                    {selectedPlant.pests?.map((p, index) => (
+                      <li key={index}>{p}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section className="mb-6">
+              <h5 className="font-medium">คำแนะนำเพิ่มเติม</h5>
+              <ul className="mt-2 text-sm text-gray-700 space-y-2">
+                <li>
+                  • ตรวจใบสม่ำเสมอ
+                  ถ้าใบเหลืองอาจเกิดจากการรดน้ำมากหรือน้อยเกินไป
+                </li>
+                <li>
+                  • หลีกเลี่ยงการเปลี่ยนตำแหน่งบ่อยเกินไป เพราะต้นอาจเครียด
+                </li>
+                <li>• ใช้ปุ๋ยเจือจางตามคำแนะนำเพื่อไม่ให้รากช็อก</li>
+                <li>
+                  • หากมีสัตว์เลี้ยง
+                  ควรวางต้นให้พ้นมือแมว/สุนัขหรือตรวจสอบความเป็นพิษก่อน
+                </li>
+              </ul>
+            </section>
+
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="js-close-modal px-4 py-2 rounded-md border hover:bg-gray-50 transition-colors duration-200"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+
+  // Use createPortal to render the modal outside the main component's DOM hierarchy
+  return createPortal(modalContent, document.body);
+};
+
+/**
+ * 🪴 Main Dictionary Component
+ */
+const PlantDictionary: React.FC = () => {
+  // State for modal management
+  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const ANIMATION_DURATION = 300; // Match CSS duration
+
+  // Use useCallback for stable function references
+  const openModal = useCallback((plantId: number) => {
+    const plant = PLANTS_DATA.find((p) => p.id === plantId);
+    if (!plant) return;
+
+    setSelectedPlant(plant);
+    // Set isModalOpen to true to trigger the 'modal-open' class for entry animation
+    setIsModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    // Set isModalOpen to false to trigger the exit animation
+    setIsModalOpen(false);
+
+    // After animation, clear the selected plant data
+    setTimeout(() => {
+      setSelectedPlant(null);
+    }, ANIMATION_DURATION);
+  }, []);
+
+  // Effect to manage body overflow for modal
+  useEffect(() => {
+    // On open/close, toggle the body scroll lock
+    // Only lock scroll if modal is open AND the content is rendered
+    document.body.style.overflow =
+      selectedPlant && isModalOpen ? "hidden" : "auto";
+
+    // Cleanup function to reset overflow when component unmounts
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [selectedPlant, isModalOpen]);
+
+  // Effect to handle 'Escape' key press
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isModalOpen) {
+        closeModal();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isModalOpen, closeModal]);
+
+  return (
+    <div className="content-wrapper p-6 bg-white text-gray-800">
+      <a
+        href="/"
+        className="link-back-home mb-4 inline-block px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+      >
+        ◀ กลับหน้าแรก
+      </a>
+
+      <h1 className="text-3xl font-semibold mb-4">Plant Dictionary 🌿</h1>
+
+      <p className="text-sm text-gray-600 mb-6">
+        คลิกการ์ดเพื่อดูรายละเอียดเต็ม — โมดอลสไตล์ Minimal + White
+      </p>
+
+      {/* Plant Grid */}
+      <div
+        id="plant-grid"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+      >
+        {PLANTS_DATA.map((plant) => (
+          <PlantCard key={plant.id} plant={plant} onOpenModal={openModal} />
+        ))}
+      </div>
+
+      {/* Modal is rendered outside the main flow using Portal */}
+      <PlantModal
+        selectedPlant={selectedPlant}
+        onClose={closeModal}
+        isModalOpen={isModalOpen}
+      />
     </div>
   );
 };
