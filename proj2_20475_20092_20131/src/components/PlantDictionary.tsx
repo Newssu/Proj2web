@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 // ...
 <Link
   to="/"
-  className="mb-4 inline-block px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+  className="mb-6 inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-200 transition"
 >
   ◀ กลับหน้าแรก
 </Link>
