@@ -38,6 +38,12 @@ const Header: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2">
+        <Link
+          to="/dictionary"
+          className="inline-flex items-center justify-center rounded-xl bg-emerald-500 text-white px-5 py-3 font-semibold shadow hover:bg-emerald-600 transition"
+        >
+          🌿 พจนานุกรมต้นไม้
+        </Link>
           <button className="rounded-xl px-3 py-2 border border-emerald-200/70 bg-white/70 hover:bg-emerald-100 transition font-semibold flex items-center gap-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:bg-gray-700"
             onClick={onRecommend}>
             🌱 แนะนำต้นไม้ให้ฉัน
@@ -71,12 +77,7 @@ const Header: React.FC<Props> = ({
             </span>
           </button>
         </div>
-        <Link
-          to="/dictionary"
-          className="inline-flex items-center justify-center rounded-xl bg-emerald-500 text-white px-5 py-3 font-semibold shadow hover:bg-emerald-600 transition"
-        >
-          🌿 พจนานุกรมต้นไม้
-        </Link>
+        
       </div>
 
       {/* filter buttons (ย้ายมาอยู่ใน Header เพื่อไม่ปะปนกับ grid) */}
