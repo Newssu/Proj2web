@@ -8,13 +8,11 @@ type Props = {
   currentUser: User | null;
   onLoginOpen: () => void;
   onLogout: () => void;
-  filter: "all"|"low"|"high";
-  setFilter: (f: "all"|"low"|"high") => void;
 };
 
 const Header: React.FC<Props> = ({
   searchTerm, setSearchTerm, onRecommend, onOpenCart, cartCount,
-  currentUser, onLoginOpen, onLogout, filter, setFilter
+  currentUser, onLoginOpen, onLogout
 }) => (
   <header className="sticky top-0 z-40 backdrop-blur-sm bg-white/70 dark:bg-gray-900/60 border-b border-emerald-100/70 dark:border-gray-800">
     <div className="px-4 sm:px-6 lg:px-8">
@@ -75,19 +73,7 @@ const Header: React.FC<Props> = ({
       </div>
 
       {/* filter buttons (ย้ายมาอยู่ใน Header เพื่อไม่ปะปนกับ grid) */}
-      <div className="hidden sm:flex items-center gap-2 py-2">
-        {(["all","low","high"] as const).map(f => (
-          <button key={f}
-            onClick={() => setFilter(f)}
-            className={`rounded-xl border px-3 py-2 text-sm ${
-              filter===f
-                ? "bg-emerald-100 dark:bg-emerald-700 border-emerald-300 dark:border-emerald-600"
-                : "border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
-            }`}>
-            {f==="all" ? "ทั้งหมด" : f==="low" ? "ราคาต่ำ" : "ราคาสูง"}
-          </button>
-        ))}
-      </div>
+     
     </div>
   </header>
 );

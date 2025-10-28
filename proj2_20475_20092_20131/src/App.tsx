@@ -107,12 +107,11 @@ const App: React.FC = () => {
         currentUser={currentUser}
         onLoginOpen={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
-        filter={filter} setFilter={setFilter}
       />
 
       <Hero />
       <Features />
-      <ProductsSection products={filteredProducts} onAddToCart={handleAddToCart} />
+      <ProductsSection products={filteredProducts} onAddToCart={handleAddToCart} filter={filter} setFilter={setFilter}/>
       <Newsletter />
       <Footer />
 
