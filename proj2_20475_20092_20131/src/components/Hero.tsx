@@ -29,6 +29,7 @@ const Hero: React.FC = () => (
             <img src="https://allaboutplanties.com/cdn/shop/files/Monstera_Adansonii_Swiss_Cheese_Plant.webp?v=1740279995&width=576" className="h-12 w-12 rounded-xl object-cover" alt="Mini plant"/>
             <div><p className="font-semibold">Monstera Adansonii</p><p className="text-sm text-gray-500">ขายดีอันดับ 1</p></div>
           </div>
+          <p>kk</p>
         </div>
       </div>
     </div>
