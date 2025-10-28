@@ -10,7 +10,10 @@ const Hero: React.FC = () => (
             แต่งบ้านให้สดชื่น ด้วย <span className="text-emerald-600">ต้นไม้ฟีลมินิมอล</span>
           </h1>
           <p className="mt-4 text-gray-600 dark:text-gray-300 max-w-xl">
-            "Bloom" คือคำตอบสำหรับคนที่กำลังมองหาความสดชื่นให้กับบ้าน ...
+            "Bloom" คือคำตอบสำหรับคนที่กำลังมองหาความสดชื่นให้กับบ้าน
+             เราคัดสรรต้นไม้ฟิลมินิมอลที่เข้ากับการตกแต่งทุกสไตล์
+             พื่อให้บ้านของคุณไม่ใช่แค่ที่อยู่อาศัย
+             ต่เป็นพื้นที่ที่เต็มไปด้วยชีวิตชีวาและความสุข
           </p>
           <div className="mt-6 flex gap-3">
             <a href="#products" className="inline-flex items-center justify-center rounded-xl bg-emerald-600 text-white px-5 py-3 font-semibold shadow-lg hover:bg-emerald-700">เลือกซื้อเลย</a>
