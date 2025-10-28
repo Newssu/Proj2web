@@ -1,30 +1,37 @@
+// src/components/Payment.tsx
 import React, { useState } from "react";
 import type { Cart, Product } from "../lib/types";
 import { formatTHB } from "../lib/utils";
 
+// --- Type for props ---
 type Props = {
-  cart: Cart;
-  products: Product[];
+  cart?: Cart;
+  products?: Product[];
 };
 
-const Payment: React.FC<Props> = ({ cart, products }) => {
+const Payment: React.FC<Props> = ({ cart = {}, products = [] }) => {
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
 
+  // --- Calculate Total ---
   const entries = Object.entries(cart);
   const total = entries.reduce((sum, [id, qty]) => {
     const p = products.find((x) => x.id === Number(id));
     return sum + (p ? p.price * qty : 0);
   }, 0);
 
+  // --- Test fallback total ---
+  const totalDisplay = total > 0 ? formatTHB(total) : "฿0.00";
+
+  // --- Mock payment handler ---
   const handlePay = () => {
-    alert(`✅ ชำระเงินสำเร็จ ${formatTHB(total)} (ตัวอย่างเท่านั้น)`);
+    alert(`✅ Mock payment complete: ${totalDisplay}`);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pink-50">
-      <div className="bg-white shadow-lg rounded-2xl w-full max-w-md md:max-w-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-pink-50 px-4">
+      <div className="bg-white shadow-lg rounded-2xl w-full max-w-md p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -37,7 +44,7 @@ const Payment: React.FC<Props> = ({ cart, products }) => {
         {/* Total */}
         <div className="text-right mb-4">
           <p className="text-gray-600 text-sm">ยอดรวมทั้งหมด</p>
-          <h2 className="text-xl font-bold text-pink-600">{formatTHB(total)}</h2>
+          <h2 className="text-xl font-bold text-pink-600">{totalDisplay}</h2>
         </div>
 
         {/* Payment Methods */}
@@ -73,7 +80,6 @@ const Payment: React.FC<Props> = ({ cart, products }) => {
             </label>
             <input
               type="text"
-              inputMode="numeric"
               placeholder="0000-0000-0000-0000"
               value={cardNumber}
               onChange={(e) => setCardNumber(e.target.value)}
