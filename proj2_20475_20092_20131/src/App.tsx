@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// App.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import type { Cart, Product, User } from "./lib/types";   // ⬅️ ใช้ import type
+import { Routes, Route, useNavigate } from "react-router-dom";
+import type { Cart, Product, User } from "./lib/types";
 import { products as initialProducts, reasons } from "./lib/data";
 import { loadLocalStorage, useLocalStorage } from "./hooks/useLocalStorage";
-
 
 import BackgroundVideo from "./components/BackgroundVideo";
 import Header from "./components/Header";
@@ -13,12 +12,12 @@ import Features from "./components/Features";
 import ProductsSection from "./components/ProductsSection";
 import Newsletter from "./components/Newsletter";
 import Footer from "./components/Footer";
-import CartDrawer from "./components/CartDrawer.tsx";
+import CartDrawer from "./components/CartDrawer";
 import RecommendModal from "./components/RecommendModal";
 import LoginModal from "./components/LoginModal";
+import Payment from "./components/Payment"; // ✅ import payment page
 
 const App: React.FC = () => {
-  // --- STATE ---
   const [cart, setCart] = useState<Cart>(() => loadLocalStorage<Cart>("cart", {}));
   useLocalStorage("cart", cart);
 
@@ -33,26 +32,33 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<"all" | "low" | "high">("all");
 
-  // --- CART HANDLERS ---
+  const navigate = useNavigate(); // ✅ add navigation hook
+
   const handleAddToCart = (id: number) =>
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
 
   const handleRemoveFromCart = (id: number) =>
-    setCart((c) => { const nc = { ...c }; delete nc[id]; return nc; });
+    setCart((c) => {
+      const nc = { ...c };
+      delete nc[id];
+      return nc;
+    });
 
   const handleChangeQty = (id: number, delta: number) =>
     setCart((c) => {
       const newQty = (c[id] || 1) + delta;
-      if (newQty < 1) { const nc = { ...c }; delete nc[id]; return nc; }
+      if (newQty < 1) {
+        const nc = { ...c };
+        delete nc[id];
+        return nc;
+      }
       return { ...c, [id]: newQty };
     });
 
   const handleSetQty = (id: number, qty: number) =>
     setCart((c) => ({ ...c, [id]: Math.max(1, qty || 1) }));
 
-  // --- AUTH (mock เหมือนเดิม/หรือเสียบ API จริงได้) ---
   const handleLogin = async (email: string, pass: string) => {
-    // mock
     await new Promise<void>((resolve, reject) => {
       setTimeout(() => {
         if (email === "user@example.com" && pass === "password123") {
@@ -63,80 +69,109 @@ const App: React.FC = () => {
       }, 800);
     });
   };
+
   const handleLogout = () => setCurrentUser(null);
 
-  // --- PRODUCTS (filter + search) ---
   const filteredProducts = useMemo(() => {
     let list = [...initialProducts];
     if (searchTerm) {
-      list = list.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      list = list.filter((p) =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
-    if (filter === "low") list.sort((a,b)=>a.price-b.price);
-    if (filter === "high") list.sort((a,b)=>b.price-a.price);
+    if (filter === "low") list.sort((a, b) => a.price - b.price);
+    if (filter === "high") list.sort((a, b) => b.price - a.price);
     return list;
   }, [searchTerm, filter]);
 
-  // --- RECOMMEND ---
   const handleRecommend = () => {
-    const randPlant = initialProducts[Math.floor(Math.random()*initialProducts.length)];
-    const randReason = reasons[Math.floor(Math.random()*reasons.length)];
-    setRecommendedPlant(randPlant); setRecommendedReason(randReason); setIsRecommendOpen(true);
+    const randPlant =
+      initialProducts[Math.floor(Math.random() * initialProducts.length)];
+    const randReason = reasons[Math.floor(Math.random() * reasons.length)];
+    setRecommendedPlant(randPlant);
+    setRecommendedReason(randReason);
+    setIsRecommendOpen(true);
   };
 
-  // --- ESC to close modals ---
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setIsRecommendOpen(false); setIsLoginModalOpen(false); setIsCartOpen(false); }
+      if (e.key === "Escape") {
+        setIsRecommendOpen(false);
+        setIsLoginModalOpen(false);
+        setIsCartOpen(false);
+      }
     };
     document.addEventListener("keydown", onEsc);
     return () => document.removeEventListener("keydown", onEsc);
   }, []);
 
-  const cartEntries = useMemo(()=>Object.entries(cart), [cart]);
-  const cartItemCount = useMemo(()=>cartEntries.reduce((s,[,q])=>s+q,0),[cartEntries]);
+  const cartEntries = useMemo(() => Object.entries(cart), [cart]);
+  const cartItemCount = useMemo(
+    () => cartEntries.reduce((s, [, q]) => s + q, 0),
+    [cartEntries]
+  );
 
   return (
-    <div>
-      <BackgroundVideo />
-
-      <Header
-        searchTerm={searchTerm} setSearchTerm={setSearchTerm}
-        onRecommend={handleRecommend}
-        onOpenCart={() => setIsCartOpen(true)}
-        cartCount={cartItemCount}
-        currentUser={currentUser}
-        onLoginOpen={() => setIsLoginModalOpen(true)}
-        onLogout={handleLogout}
+    <Routes>
+      {/* 🏠 Main Shop Page */}
+      <Route
+        path="/"
+        element={
+          <>
+            <BackgroundVideo />
+            <Header
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              onRecommend={handleRecommend}
+              onOpenCart={() => setIsCartOpen(true)}
+              cartCount={cartItemCount}
+              currentUser={currentUser}
+              onLoginOpen={() => setIsLoginModalOpen(true)}
+              onLogout={handleLogout}
+            />
+            <Hero />
+            <Features />
+            <ProductsSection
+              products={filteredProducts}
+              onAddToCart={handleAddToCart}
+              filter={filter}
+              setFilter={setFilter}
+            />
+            <Newsletter />
+            <Footer />
+            <RecommendModal
+              open={isRecommendOpen}
+              onClose={() => setIsRecommendOpen(false)}
+              plant={recommendedPlant}
+              reason={recommendedReason}
+            />
+            <LoginModal
+              isOpen={isLoginModalOpen}
+              onClose={() => setIsLoginModalOpen(false)}
+              onLoginSubmit={handleLogin}
+            />
+            <CartDrawer
+              open={isCartOpen}
+              onClose={() => setIsCartOpen(false)}
+              cart={cart}
+              products={initialProducts}
+              onChangeQty={handleChangeQty}
+              onSetQty={handleSetQty}
+              onRemove={handleRemoveFromCart}
+              // ✅ navigate to payment
+              onCheckout={() => {
+                setIsCartOpen(false);
+                navigate("/payment");
+              }}
+            />
+          </>
+        }
       />
 
-      <Hero />
-      <Features />
-      <ProductsSection products={filteredProducts} onAddToCart={handleAddToCart} filter={filter} setFilter={setFilter}/>
-      <Newsletter />
-      <Footer />
-
-      {/* Modals / Drawers */}
-      <RecommendModal
-        open={isRecommendOpen}
-        onClose={() => setIsRecommendOpen(false)}
-        plant={recommendedPlant}
-        reason={recommendedReason}
-      />
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onLoginSubmit={handleLogin}
-      />
-      <CartDrawer
-        open={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cart={cart}
-        products={initialProducts}
-        onChangeQty={handleChangeQty}
-        onSetQty={handleSetQty}
-        onRemove={handleRemoveFromCart}
-      />
-    </div>
+      {/* 💰 Payment Page */}
+      <Route path="/payment" element={<Payment cart={cart} products={initialProducts} />} />
+    </Routes>
   );
 };
+
 export default App;
