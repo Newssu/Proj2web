@@ -11,7 +11,7 @@ const BackgroundVideo: React.FC = () => (
           <source src="/File/wgiteBGball.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
-        {/*1123*/}
+
       </div>
       
 );
