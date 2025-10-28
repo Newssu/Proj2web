@@ -17,6 +17,7 @@ import RecommendModal from "./components/RecommendModal";
 import LoginModal from "./components/LoginModal";
 import Payment from "./components/Payment"; // ✅ import payment page
 
+
 const App: React.FC = () => {
   const [cart, setCart] = useState<Cart>(() => loadLocalStorage<Cart>("cart", {}));
   useLocalStorage("cart", cart);

@@ -6,7 +6,6 @@ import PlantDictionary from "./components/PlantDictionary";
 import Payment from "./components/Payment";
 import "./index.css";
 
-
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
