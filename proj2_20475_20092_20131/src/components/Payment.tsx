@@ -1,220 +1,209 @@
-import React, { useState } from "react";
-// สมมติว่า 'Cart' and 'Product' types อยู่ในไฟล์นี้
-// import type { Cart, Product } from "../lib/types";
+// src/components/Payment.tsx
+import React, { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../lib/api";
 
-// สมมติว่า 'formatTHB' function อยู่ในไฟล์นี้
-// import { formatTHB } from "../lib/utils";
+type Product = { id: number; name: string; price: number; img?: string };
+type Cart = Record<number, number>;
 
-// นำเข้า Link หากคุณใช้ React Router
-// import { Link } from "react-router-dom";
+const formatTHB = (n: number) =>
+  new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB" }).format(n);
 
-// --- Mockup Types and Utils for Demo ---
-// (ส่วนนี้ใช้เพื่อให้โค้ดตัวอย่างทำงานได้)
-type Product = { id: number; name: string; price: number };
-type Cart = { [key: number]: number };
-const formatTHB = (amount: number) => {
-  return new Intl.NumberFormat("th-TH", {
-    style: "currency",
-    currency: "THB",
-  }).format(amount);
+type Props = {
+  cart: Cart;
+  products: Product[];
+  onGoToTransport?: () => void; // ⬅️ ใส่ ?
 };
-// Mock Link component
-const Link = ({
-  to,
-  children,
-  className,
-  onClick,
-}: {
-  to: string;
-  children: React.ReactNode;
-  className: string;
-  onClick?: () => void;
-}) => (
-  <a href={to} className={className} onClick={onClick}>
-    {children}
-  </a>
-);
-// --- End of Mockup ---
 
-type Props = { cart: Cart; products: Product[]; onGoToTransport?: () => void };
 
-const Payment: React.FC<Props> = ({
-  cart = { 1: 1, 2: 3 }, //ข้อมูลตัวอย่าง
-  products = [
-    //ข้อมูลตัวอย่าง
-    { id: 1, name: "Fiddle Leaf Fig", price: 1290 },
-    { id: 2, name: "Snake Plant", price: 390 },
-  ],
-  onGoToTransport,
-}) => {
-  const [method, setMethod] = useState("visa");
+const Payment: React.FC<Props> = ({ cart, products, onGoToTransport }) => {
+  const navigate = useNavigate();
+
+  const [method, setMethod] =
+    useState<"visa" | "mastercard" | "paypal" | "promptpay">("visa");
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // --- Calculate total ---
-  const entries = Object.entries(cart);
-  const total = entries.reduce((sum, [id, qty]) => {
-    const p = products.find((x) => x.id === Number(id));
-    return sum + (p ? p.price * qty : 0);
-  }, 0);
+  // ---------- ใช้ cart จาก props; ถ้า props ว่าง ค่อย fallback localStorage ----------
+  const cartSource: Cart = useMemo(() => {
+    if (cart && Object.keys(cart).length > 0) return cart;
+    try {
+      const raw = localStorage.getItem("cart");
+      return raw ? (JSON.parse(raw) as Cart) : {};
+    } catch {
+      return {};
+    }
+  }, [cart]);
+
+  // ---------- รวม cart + products เป็นบรรทัดเดียว (ใช้โชว์ + ใช้ยิง API) ----------
+  const lines = useMemo(() => {
+    return Object.entries(cartSource)
+      .map(([sid, qty]) => {
+        const id = Number(sid);
+        const p = products.find((x) => x.id === id);
+        return p
+          ? { id, name: p.name, price: p.price, qty: Number(qty) }
+          : null;
+      })
+      .filter(Boolean) as { id: number; name: string; price: number; qty: number }[];
+  }, [cartSource, products]);
+
+  // ---------- รวมยอด ----------
+  const total = useMemo(
+    () => lines.reduce((s, l) => s + l.price * l.qty, 0),
+    [lines]
+  );
   const totalDisplay = total > 0 ? formatTHB(total) : "฿0.00";
 
-  /**
-   * (แก้ไข) เปลี่ยนชื่อฟังก์ชัน
-   * และเปลี่ยนจากการ alert "ชำระเงินสำเร็จ"
-   * เป็นการเรียก onGoToTransport() เพื่อไปหน้า transport
-   */
-  const handleContinue = () => {
-    // alert(`🌿 ชำระเงินสำเร็จ (${totalDisplay}) ด้วยช่องทาง: ${method.toUpperCase()}`);
+  // ---------- ตรวจบัตร (เฉพาะ visa/mastercard) ----------
+  const validateCardIfNeeded = () => {
+    if (method === "visa" || method === "mastercard") {
+      const digits = cardNumber.replace(/[-\s]/g, "");
+      if (!/^\d{12,19}$/.test(digits)) {
+        setError("หมายเลขบัตรไม่ถูกต้อง");
+        return false;
+      }
+      if (!/^\d{2}\s*\/\s*\d{2}$/.test(expiry.trim())) {
+        setError("วันหมดอายุต้องเป็นรูปแบบ MM / YY");
+        return false;
+      }
+      if (!/^\d{3,4}$/.test(cvc)) {
+        setError("CVC ไม่ถูกต้อง");
+        return false;
+      }
+    }
+    return true;
+  };
 
-    // เรียกฟังก์ชัน onGoToTransport ที่ส่งมาจาก Component แม่
-    // เพื่อบอกให้ "ไปหน้า transport"
-    if (onGoToTransport) {
-      onGoToTransport();
-    } else {
-      // Fallback for demo
-      console.log("Proceeding to transport...");
+  // ---------- ส่งออเดอร์ ----------
+  const handleContinue = async () => {
+    setError(null);
+
+    if (lines.length === 0) {
+      setError("ยังไม่มีสินค้าในตะกร้า");
+      return;
+    }
+    if (!validateCardIfNeeded()) return;
+
+    try {
+      setSubmitting(true);
+
+      // ✅ ใช้ข้อมูลบรรทัดเดียวกันทั้งโชว์และยิง API
+      const payloadItems = lines.map((l) => ({ productId: l.id, qty: l.qty }));
+      await api.post("/orders", { method, items: payloadItems, total });
+
+      // เก็บ draft ให้หน้า Delivery แสดงซ้ำ
+      localStorage.setItem(
+        "orderDraft",
+        JSON.stringify({
+          items: lines,    // มี name/price/qty ให้โชว์ได้ทันที
+          subtotal: total,
+          method,
+        })
+      );
+
+      // ล้างตะกร้า
+      localStorage.removeItem("cart");
+
+      // ไปหน้าจัดส่ง
+      onGoToTransport ? onGoToTransport() : navigate("/delivery");
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const rawMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message;
+      const msg = Array.isArray(rawMsg) ? rawMsg.join(", ") : String(rawMsg || "ไม่สามารถชำระเงินได้");
+      setError(status === 401 ? "กรุณาเข้าสู่ระบบก่อนทำการสั่งซื้อ" : msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-green-50 px-4 py-12">
-      {/* ... (ปุ่มกลับหน้าแรกยังเหมือนเดิม) ... */}
-      <a
-        href="/"
-        className="absolute right-8 top-8 flex items-center gap-2 px-4 py-2 
-                       bg-white border border-gray-200 rounded-full shadow-sm 
-                       hover:shadow-md hover:bg-pink-50 text-gray-700 
-                       transition-all duration-200 text-sm font-medium"
+      <Link
+        to="/"
+        className="absolute right-8 top-8 flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full shadow-sm hover:shadow-md hover:bg-pink-50 text-gray-700 transition-all duration-200 text-sm font-medium"
       >
         <span className="text-pink-500 text-lg">⬅</span> กลับหน้าแรก
-      </a>
+      </Link>
 
       <div className="bg-white shadow-xl rounded-2xl w-full max-w-lg p-8">
-        {/* ... (Header และ Order Summary ยังเหมือนเดิม) ... */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <span className="text-3xl">🌱</span>
-            <h1 className="font-semibold text-lg text-gray-700">
-              Bloom Plant Shop
-            </h1>
+            <h1 className="font-semibold text-lg text-gray-700">Bloom Plant Shop</h1>
           </div>
           <p className="text-sm text-gray-500">💳 การชำระเงินที่ปลอดภัย</p>
         </div>
 
+        {/* Summary */}
         <div className="mb-6 border-b border-gray-200 pb-4">
-          <h2 className="text-lg font-semibold text-green-700 mb-2">
-            🪴 สรุปรายการต้นไม้ที่คุณเลือก
-          </h2>
-          {entries.length === 0 ? (
+          <h2 className="text-lg font-semibold text-green-700 mb-2">🪴 สรุปรายการต้นไม้ที่คุณเลือก</h2>
+
+          {lines.length === 0 ? (
             <p className="text-gray-500 text-sm">ยังไม่มีสินค้าในตะกร้า</p>
           ) : (
             <ul className="text-gray-700 space-y-2">
-              {entries.map(([id, qty]) => {
-                const p = products.find((x) => x.id === Number(id));
-                if (!p) return null;
-                return (
-                  <li
-                    key={id}
-                    className="flex justify-between border-b border-dashed border-gray-100 pb-1"
-                  >
-                    <span>
-                      {p.name} × {qty}
-                    </span>
-                    <span className="text-gray-600">
-                      {formatTHB(p.price * qty)}
-                    </span>
-                  </li>
-                );
-              })}
+              {lines.map((l) => (
+                <li
+                  key={l.id}
+                  className="flex justify-between border-b border-dashed border-gray-100 pb-1"
+                >
+                  <span>{l.name} × {l.qty}</span>
+                  <span className="text-gray-600">{formatTHB(l.price * l.qty)}</span>
+                </li>
+              ))}
             </ul>
           )}
+
           <h3 className="text-right mt-3 font-bold text-pink-600">
             รวมทั้งหมด: {totalDisplay}
           </h3>
         </div>
 
-        {/* ... (ส่วนเลือกช่องทางชำระเงินยังเหมือนเดิม) ... */}
-        <h2 className="text-md font-semibold text-gray-700 mb-2">
-          เลือกช่องทางการชำระเงิน
-        </h2>
+        {/* Payment Methods */}
+        <h2 className="text-md font-semibold text-gray-700 mb-2">เลือกช่องทางการชำระเงิน</h2>
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <button
-            onClick={() => setMethod("visa")}
-            className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
-              method === "visa"
-                ? "border-pink-500 bg-pink-50"
-                : "border-gray-200 hover:border-gray-400"
-            }`}
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg"
-              alt="Visa"
-              className="h-8 object-contain"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          </button>
-
-          <button
-            onClick={() => setMethod("mastercard")}
-            className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
-              method === "mastercard"
-                ? "border-pink-500 bg-pink-50"
-                : "border-gray-200 hover:border-gray-400"
-            }`}
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/960px-Mastercard-logo.svg.png"
-              alt="Mastercard"
-              className="h-8 object-contain"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          </button>
-
-          <button
-            onClick={() => setMethod("paypal")}
-            className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
-              method === "paypal"
-                ? "border-pink-500 bg-pink-50"
-                : "border-gray-200 hover:border-gray-400"
-            }`}
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg"
-              alt="PayPal"
-              className="h-8 object-contain"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          </button>
-
-          <button
-            onClick={() => setMethod("promptpay")}
-            className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
-              method === "promptpay"
-                ? "border-pink-500 bg-pink-50"
-                : "border-gray-200 hover:border-gray-400"
-            }`}
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png"
-              alt="PromptPay"
-              className="h-8 object-contain"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          </button>
+          {(["visa", "mastercard", "paypal", "promptpay"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMethod(m)}
+              className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
+                method === m ? "border-pink-500 bg-pink-50" : "border-gray-200 hover:border-gray-400"
+              }`}
+              aria-label={m}
+            >
+              {m === "visa" && (
+                <img className="h-8" src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" />
+              )}
+              {m === "mastercard" && (
+                <img className="h-8" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/960px-Mastercard-logo.svg.png" />
+              )}
+              {m === "paypal" && (
+                <img className="h-8" src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" />
+              )}
+              {m === "promptpay" && (
+                <img className="h-8" src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png" />
+              )}
+            </button>
+          ))}
         </div>
 
-        {/* Card info only for Visa/MasterCard */}
+        {/* Card form */}
         {(method === "visa" || method === "mastercard") && (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleContinue(); // เรียก handleContinue
+              handleContinue();
             }}
             className="space-y-4"
           >
-            {/* ... (Input fields: Card Number, Expiry, CVC ยังเหมือนเดิม) ... */}
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">
                 หมายเลขบัตร (Card Number)
@@ -258,39 +247,33 @@ const Payment: React.FC<Props> = ({
               </div>
             </div>
 
-            {/*
-             * (แก้ไข)
-             * เปลี่ยนจาก <Link> เป็น <button type="submit">
-             * เพื่อให้ปุ่มนี้ทำหน้าที่ "ส่งฟอร์ม" นี้อย่างถูกต้อง
-             * และใช้ className เดิมเพื่อให้ดีไซน์สวยงาม
-             */}
             <button
               type="submit"
-              className="w-full py-3 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition"
+              disabled={submitting || lines.length === 0}
+              className="w-full py-3 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition disabled:opacity-60"
             >
-              ยืนยันการชำระเงิน
+              {submitting ? "กำลังชำระเงิน..." : "ยืนยันการชำระเงิน"}
             </button>
           </form>
         )}
 
-        {/* PromptPay / PayPal notice */}
+        {/* PromptPay / PayPal */}
         {(method === "promptpay" || method === "paypal") && (
           <div className="text-center mt-6">
             <p className="text-gray-600 text-sm mb-3">
-              โปรดสแกน QR หรือไปที่หน้า{" "}
-              {method === "promptpay" ? "PromptPay" : "PayPal"}{" "}
-              เพื่อดำเนินการชำระเงิน
+              โปรดสแกน QR หรือไปที่หน้า {method === "promptpay" ? "PromptPay" : "PayPal"} เพื่อดำเนินการชำระเงิน
             </p>
-
-            <Link
+            <button
               onClick={handleContinue}
-              to="/delivery"
-              className="w-full block py-3 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition"
+              disabled={submitting || lines.length === 0}
+              className="w-full py-3 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition disabled:opacity-60"
             >
-              ยืนยันการชำระเงิน
-            </Link>
+              {submitting ? "กำลังยืนยัน..." : "ยืนยันการชำระเงิน"}
+            </button>
           </div>
         )}
+
+        {error && <p className="mt-4 text-red-600 text-sm text-center">{error}</p>}
       </div>
     </div>
   );

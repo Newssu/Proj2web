@@ -10,6 +10,8 @@ import PlantDictionary from "./components/PlantDictionary";
 import "./index.css";
 import Delivery from "./components/Delivery";
 import Register from "./components/Register";
+import OrderHistory from "./components/OrderHistory";
+import RequireAuth from "./components/RequireAuth";
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -32,8 +34,13 @@ function RootRoutes() {
       <Route path="/dictionary" element={<PlantDictionary />} />
       <Route path="/delivery" element={<Delivery />} />
       <Route path="/app" element={<App />} />
-      <Route path="/register" element={<Register/>} />
-      
+      <Route path="/register" element={<Register />} />
+      <Route path="/orders" element={<OrderHistory />} />
+      <Route path="/orders" element={<RequireAuth><OrderHistory /></RequireAuth>}
+      />
+
+
+
       {/* เส้นทางอื่น ๆ ที่ไม่ต้องใช้ props ใส่เพิ่มได้ */}
     </Routes>
   );

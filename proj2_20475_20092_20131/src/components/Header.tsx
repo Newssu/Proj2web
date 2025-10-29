@@ -44,10 +44,16 @@ const Header: React.FC<Props> = ({
         >
           🌿 พจนานุกรมต้นไม้
         </Link>
+        <li>
+                    <Link to="/orders" className="block px-4 py-2 hover:bg-gray-100">
+                      🧾 คำสั่งซื้อของฉัน
+                    </Link>
+                  </li>
           <button className="rounded-xl px-3 py-2 border border-emerald-200/70 bg-white/70 hover:bg-emerald-100 transition font-semibold flex items-center gap-1 dark:bg-gray-800/70 dark:border-gray-700 dark:hover:bg-gray-700"
             onClick={onRecommend}>
             🌱 แนะนำต้นไม้ให้ฉัน
           </button>
+
 
           {currentUser ? (
             <>

@@ -19,7 +19,7 @@ const LoginModal: React.FC<Props> = ({ isOpen, onClose, onLoginSubmit }) => {
       setLoading(true);
       setErr("");
       await onLoginSubmit(email, pass);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       setErr(e?.message || "Login failed");
     } finally {
@@ -53,13 +53,13 @@ const LoginModal: React.FC<Props> = ({ isOpen, onClose, onLoginSubmit }) => {
           required
         />
         {err && <p className="text-red-600 text-sm">{err}</p>}
-        
+
         <Link
-              onClick={() => {onClose();}}
-              to="/register"
-              className="text-red-400 text-sm underline text-right cursor-pointer"
-            >
-              สมัครสมาชิก
+          onClick={() => { onClose(); }}
+          to="/register"
+          className="text-red-400 text-sm underline text-right cursor-pointer"
+        >
+          สมัครสมาชิก
         </Link>
         <div className="flex gap-2">
           <button

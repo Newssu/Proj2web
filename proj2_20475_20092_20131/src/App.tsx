@@ -17,6 +17,7 @@ import CartDrawer from "./components/CartDrawer";
 import RecommendModal from "./components/RecommendModal";
 import LoginModal from "./components/LoginModal";
 import Payment from "./components/Payment";
+import OrderHistory from "./components/OrderHistory";
 
 const App: React.FC = () => {
   // --------- STATE ---------
@@ -64,9 +65,7 @@ const App: React.FC = () => {
 
   // --------- AUTH HANDLERS ---------
   const handleLogin = async (email: string, pass: string) => {
-    // NOTE: ถ้า baseURL ลงท้ายด้วย /api ให้เรียกเส้นทางสั้น '/login'
-    const { data: u } = await api.post("/login", { email, password: pass });
-    // u = { _id, username, email, token }
+    const { data: u } = await api.post("/auth/login", { email, password: pass }); // ✅ แก้ตรงนี้
     localStorage.setItem("token", u.token);
     localStorage.setItem("user", JSON.stringify({ _id: u._id, username: u.username, email: u.email }));
     setCurrentUser({ _id: u._id, username: u.username, email: u.email });
@@ -113,26 +112,32 @@ const App: React.FC = () => {
     setRecommendedReason(randReason);
     setIsRecommendOpen(true);
   };
+  const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return null;
+    }
+    return <>{children}</>;
+  };
 
   // --------- EFFECTS ---------
   useEffect(() => {
-    api.get("/products")
+    api.get('/products')
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
         const normalized = data.map((p: any) => ({
           ...p,
-          img: p.img ?? p.imageUrl ?? "",   // ✅ เติม img ให้เสมอ
+          img: p.img ?? p.imageUrl ?? "",
         }));
         setRemoteProducts(normalized);
       })
       .catch(() => setRemoteProducts(null));
   }, []);
 
+
   useEffect(() => {
-    api
-      .get("/products") // ถ้า baseURL ลงท้าย /api เส้นทางนี้ถูกต้อง
-      .then((res) => setRemoteProducts(Array.isArray(res.data) ? res.data : null))
-      .catch(() => setRemoteProducts(null));
+    const saved = localStorage.getItem("user");
+    if (saved) setCurrentUser(JSON.parse(saved));
   }, []);
 
   useEffect(() => {
@@ -215,10 +220,30 @@ const App: React.FC = () => {
           </>
         }
       />
-
+      <Route
+        path="/payment"
+        element={
+          <RequireAuth>
+            <Payment cart={cart} products={productList} />
+          </RequireAuth>
+        }
+      />
       {/* 💰 Payment Page */}
-      <Route path="/payment" element={<Payment cart={cart} products={productList} />} />
+      <Route
+        path="/payment"
+        element={
+          <Payment
+            cart={cart}
+            products={productList}   // ตัวเดียวกับที่ใช้แสดงรายการสินค้า
+            onGoToTransport={() => navigate("/delivery")}  // พาไปหน้า delivery จริง
+          />
+        }
+      />
+
+
+      <Route path="/orders" element={<OrderHistory />} />
     </Routes>
+
   );
 };
 
