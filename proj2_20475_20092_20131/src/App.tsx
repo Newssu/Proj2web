@@ -72,6 +72,13 @@ const App: React.FC = () => {
     setCurrentUser({ _id: u._id, username: u.username, email: u.email });
     setIsLoginModalOpen(false);
   };
+  const handleRegister = async (username: string, email: string, pass: string) => {
+    const { data: u } = await api.post('/auth/register', { username, email, password: pass });
+    localStorage.setItem('token', u.token);
+    localStorage.setItem('user', JSON.stringify({ _id: u._id, username: u.username, email: u.email }));
+    setCurrentUser({ _id: u._id, username: u.username, email: u.email });
+    setIsLoginModalOpen(false); // ปิด modal ถ้ามี
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -79,12 +86,12 @@ const App: React.FC = () => {
     setCurrentUser(null);
   };
 
-const productList = useMemo(() => {
-  const remote = Array.isArray(remoteProducts) ? remoteProducts : [];
-  if (remote.length === 0) return initialProducts;
-  const supplement = initialProducts.filter(p => !remote.some(r => r.id === p.id));
-  return [...remote, ...supplement];
-}, [remoteProducts]);
+  const productList = useMemo(() => {
+    const remote = Array.isArray(remoteProducts) ? remoteProducts : [];
+    if (remote.length === 0) return initialProducts;
+    const supplement = initialProducts.filter(p => !remote.some(r => r.id === p.id));
+    return [...remote, ...supplement];
+  }, [remoteProducts]);
 
 
   const filteredProducts = useMemo(() => {
@@ -109,17 +116,17 @@ const productList = useMemo(() => {
 
   // --------- EFFECTS ---------
   useEffect(() => {
-  api.get("/products")
-    .then((res) => {
-      const data = Array.isArray(res.data) ? res.data : [];
-      const normalized = data.map((p: any) => ({
-        ...p,
-        img: p.img ?? p.imageUrl ?? "",   // ✅ เติม img ให้เสมอ
-      }));
-      setRemoteProducts(normalized);
-    })
-    .catch(() => setRemoteProducts(null));
-}, []);
+    api.get("/products")
+      .then((res) => {
+        const data = Array.isArray(res.data) ? res.data : [];
+        const normalized = data.map((p: any) => ({
+          ...p,
+          img: p.img ?? p.imageUrl ?? "",   // ✅ เติม img ให้เสมอ
+        }));
+        setRemoteProducts(normalized);
+      })
+      .catch(() => setRemoteProducts(null));
+  }, []);
 
   useEffect(() => {
     api

@@ -1,25 +1,20 @@
 // src/lib/api.ts
 import axios from "axios";
 
+// ให้ชี้ที่ ROOT ของ API เท่านั้น (มี /api เพราะ backend setGlobalPrefix('api'))
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API || "http://localhost:4000/api",
-  timeout: 10000,
+  baseURL: "http://localhost:4000/api",
 });
 
-// แนบ token อัตโนมัติถ้ามี
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
-
-// จัดการ error กลางๆ (optional)
+// (optional) จัดการ error กลาง
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    // คุณจะโชว์ toast/alert ตรงนี้ก็ได้
-    return Promise.reject(err);
-  }
+  (err) => Promise.reject(err)
 );
 
 export default api;
