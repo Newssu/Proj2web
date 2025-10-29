@@ -16,14 +16,11 @@ import Footer from "./components/Footer";
 import CartDrawer from "./components/CartDrawer";
 import RecommendModal from "./components/RecommendModal";
 import LoginModal from "./components/LoginModal";
-import Payment from "./components/Payment"; 
-
+import Payment from "./components/Payment";
 
 const App: React.FC = () => {
   // --------- STATE ---------
-  const [cart, setCart] = useState<Cart>(() =>
-    loadLocalStorage<Cart>("cart", {})
-  );
+  const [cart, setCart] = useState<Cart>(() => loadLocalStorage<Cart>("cart", {}));
   useLocalStorage("cart", cart);
 
   const [remoteProducts, setRemoteProducts] = useState<Product[] | null>(null);
@@ -67,13 +64,11 @@ const App: React.FC = () => {
 
   // --------- AUTH HANDLERS ---------
   const handleLogin = async (email: string, pass: string) => {
+    // NOTE: ถ้า baseURL ลงท้ายด้วย /api ให้เรียกเส้นทางสั้น '/login'
     const { data: u } = await api.post("/login", { email, password: pass });
     // u = { _id, username, email, token }
     localStorage.setItem("token", u.token);
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ _id: u._id, username: u.username, email: u.email })
-    );
+    localStorage.setItem("user", JSON.stringify({ _id: u._id, username: u.username, email: u.email }));
     setCurrentUser({ _id: u._id, username: u.username, email: u.email });
     setIsLoginModalOpen(false);
   };
@@ -85,7 +80,15 @@ const App: React.FC = () => {
   };
 
   // --------- DATA COMPOSITION ---------
-  const productList = remoteProducts ?? initialProducts;
+  // รวมสินค้าจาก DB + initialProducts และกันไม่ให้ซ้ำ id
+  const productList = useMemo(() => {
+    const remote = Array.isArray(remoteProducts) ? remoteProducts : [];
+    if (remote.length === 0) return initialProducts;
+    const supplement = initialProducts.filter(
+      (p) => !remote.some((r) => r.id === p.id)
+    );
+    return [...remote, ...supplement];
+  }, [remoteProducts]);
 
   const filteredProducts = useMemo(() => {
     let list = [...productList];
@@ -100,25 +103,23 @@ const App: React.FC = () => {
   }, [searchTerm, filter, productList]);
 
   const handleRecommend = () => {
-    const randPlant =
-      initialProducts[Math.floor(Math.random() * initialProducts.length)];
+    const randPlant = initialProducts[Math.floor(Math.random() * initialProducts.length)];
     const randReason = reasons[Math.floor(Math.random() * reasons.length)];
     setRecommendedPlant(randPlant);
     setRecommendedReason(randReason);
     setIsRecommendOpen(true);
   };
 
-
+  // --------- EFFECTS ---------
   useEffect(() => {
     const saved = localStorage.getItem("user");
     if (saved) setCurrentUser(JSON.parse(saved));
   }, []);
 
-
   useEffect(() => {
     api
-      .get("/products")
-      .then((res) => setRemoteProducts(res.data))
+      .get("/products") // ถ้า baseURL ลงท้าย /api เส้นทางนี้ถูกต้อง
+      .then((res) => setRemoteProducts(Array.isArray(res.data) ? res.data : null))
       .catch(() => setRemoteProducts(null));
   }, []);
 
@@ -189,6 +190,12 @@ const App: React.FC = () => {
               onSetQty={handleSetQty}
               onRemove={handleRemoveFromCart}
               onCheckout={() => {
+                // ถ้ายังไม่ได้ล็อกอิน ให้เปิด Login ก่อน
+                if (!currentUser) {
+                  setIsCartOpen(false);
+                  setIsLoginModalOpen(true);
+                  return;
+                }
                 setIsCartOpen(false);
                 navigate("/payment");
               }}
@@ -198,13 +205,8 @@ const App: React.FC = () => {
       />
 
       {/* 💰 Payment Page */}
-      <Route
-        path="/payment"
-        element={<Payment cart={cart} products={productList} />}
-        
-      />
-      </Routes>
-    
+      <Route path="/payment" element={<Payment cart={cart} products={productList} />} />
+    </Routes>
   );
 };
 
