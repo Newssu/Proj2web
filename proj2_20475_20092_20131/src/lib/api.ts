@@ -2,14 +2,24 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:5000",
-  headers: { "Content-Type": "application/json" },
+  baseURL: import.meta.env.VITE_API || "http://localhost:4000/api",
+  timeout: 10000,
 });
 
+// แนบ token อัตโนมัติถ้ามี
 api.interceptors.request.use((config) => {
-  const t = localStorage.getItem("token");
-  if (t) config.headers.Authorization = `Bearer ${t}`;
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// จัดการ error กลางๆ (optional)
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    // คุณจะโชว์ toast/alert ตรงนี้ก็ได้
+    return Promise.reject(err);
+  }
+);
 
 export default api;

@@ -67,10 +67,7 @@ const App: React.FC = () => {
 
   // --------- AUTH HANDLERS ---------
   const handleLogin = async (email: string, pass: string) => {
-    const { data: u } = await api.post("/api/login", {
-      email,
-      password: pass,
-    });
+    const { data: u } = await api.post("/login", { email, password: pass });
     // u = { _id, username, email, token }
     localStorage.setItem("token", u.token);
     localStorage.setItem(
@@ -120,7 +117,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     api
-      .get("/api/products")
+      .get("/products")
       .then((res) => setRemoteProducts(res.data))
       .catch(() => setRemoteProducts(null));
   }, []);
