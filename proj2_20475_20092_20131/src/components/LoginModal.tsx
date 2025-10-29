@@ -52,8 +52,7 @@ const LoginModal: React.FC<Props> = ({ isOpen, onClose, onLoginSubmit }) => {
         />
         {err && <p className="text-red-600 text-sm">{err}</p>}
         <p
-          className="text-red-4
-          00 text-sm underline text-right cursor-pointer"
+          className="text-red-400 text-sm underline text-right cursor-pointer"
           onClick={() => {
             onClose();
             //navigate("/Register"); // ไปหน้า component สมัครสมาชิก
