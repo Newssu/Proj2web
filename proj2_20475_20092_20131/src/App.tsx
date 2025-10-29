@@ -4,6 +4,7 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import type { Cart, Product, User } from "./lib/types";
 import { products as initialProducts, reasons } from "./lib/data";
 import { loadLocalStorage, useLocalStorage } from "./hooks/useLocalStorage";
+import api from "./lib/api";
 
 import BackgroundVideo from "./components/BackgroundVideo";
 import Header from "./components/Header";
@@ -17,11 +18,14 @@ import RecommendModal from "./components/RecommendModal";
 import LoginModal from "./components/LoginModal";
 import Payment from "./components/Payment"; // ✅ import payment page
 
-
 const App: React.FC = () => {
-  const [cart, setCart] = useState<Cart>(() => loadLocalStorage<Cart>("cart", {}));
+  // --------- STATE ---------
+  const [cart, setCart] = useState<Cart>(() =>
+    loadLocalStorage<Cart>("cart", {})
+  );
   useLocalStorage("cart", cart);
 
+  const [remoteProducts, setRemoteProducts] = useState<Product[] | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -33,8 +37,9 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<"all" | "low" | "high">("all");
 
-  const navigate = useNavigate(); // ✅ add navigation hook
+  const navigate = useNavigate();
 
+  // --------- CART HANDLERS ---------
   const handleAddToCart = (id: number) =>
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
 
@@ -59,22 +64,33 @@ const App: React.FC = () => {
   const handleSetQty = (id: number, qty: number) =>
     setCart((c) => ({ ...c, [id]: Math.max(1, qty || 1) }));
 
+  // --------- AUTH HANDLERS ---------
   const handleLogin = async (email: string, pass: string) => {
-    await new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        if (email === "user@example.com" && pass === "password123") {
-          setCurrentUser({ _id: "60d5f1...", username: "BloomUser", email });
-          setIsLoginModalOpen(false);
-          resolve();
-        } else reject(new Error("Invalid email or password. (Mock)"));
-      }, 800);
+    const { data: u } = await api.post("/api/login", {
+      email,
+      password: pass,
     });
+    // u = { _id, username, email, token }
+    localStorage.setItem("token", u.token);
+    localStorage.setItem(
+      "user",
+      JSON.stringify({ _id: u._id, username: u.username, email: u.email })
+    );
+    setCurrentUser({ _id: u._id, username: u.username, email: u.email });
+    setIsLoginModalOpen(false);
   };
 
-  const handleLogout = () => setCurrentUser(null);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setCurrentUser(null);
+  };
+
+  // --------- DATA COMPOSITION ---------
+  const productList = remoteProducts ?? initialProducts;
 
   const filteredProducts = useMemo(() => {
-    let list = [...initialProducts];
+    let list = [...productList];
     if (searchTerm) {
       list = list.filter((p) =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -83,7 +99,7 @@ const App: React.FC = () => {
     if (filter === "low") list.sort((a, b) => a.price - b.price);
     if (filter === "high") list.sort((a, b) => b.price - a.price);
     return list;
-  }, [searchTerm, filter]);
+  }, [searchTerm, filter, productList]);
 
   const handleRecommend = () => {
     const randPlant =
@@ -93,6 +109,20 @@ const App: React.FC = () => {
     setRecommendedReason(randReason);
     setIsRecommendOpen(true);
   };
+
+
+  useEffect(() => {
+    const saved = localStorage.getItem("user");
+    if (saved) setCurrentUser(JSON.parse(saved));
+  }, []);
+
+
+  useEffect(() => {
+    api
+      .get("/api/products")
+      .then((res) => setRemoteProducts(res.data))
+      .catch(() => setRemoteProducts(null));
+  }, []);
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => {
@@ -106,6 +136,7 @@ const App: React.FC = () => {
     return () => document.removeEventListener("keydown", onEsc);
   }, []);
 
+  // --------- DERIVED ---------
   const cartEntries = useMemo(() => Object.entries(cart), [cart]);
   const cartItemCount = useMemo(
     () => cartEntries.reduce((s, [, q]) => s + q, 0),
@@ -155,11 +186,10 @@ const App: React.FC = () => {
               open={isCartOpen}
               onClose={() => setIsCartOpen(false)}
               cart={cart}
-              products={initialProducts}
+              products={productList}
               onChangeQty={handleChangeQty}
               onSetQty={handleSetQty}
               onRemove={handleRemoveFromCart}
-              // ✅ navigate to payment
               onCheckout={() => {
                 setIsCartOpen(false);
                 navigate("/payment");
@@ -170,7 +200,10 @@ const App: React.FC = () => {
       />
 
       {/* 💰 Payment Page */}
-      <Route path="/payment" element={<Payment cart={cart} products={initialProducts} />} />
+      <Route
+        path="/payment"
+        element={<Payment cart={cart} products={productList} />}
+      />
     </Routes>
   );
 };
