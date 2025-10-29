@@ -1,15 +1,51 @@
 import React, { useState } from "react";
-import type { Cart, Product } from "../lib/types";
-import { formatTHB } from "../lib/utils";
-import { Link } from "react-router-dom";
+// สมมติว่า 'Cart' and 'Product' types อยู่ในไฟล์นี้
+// import type { Cart, Product } from "../lib/types";
+
+// สมมติว่า 'formatTHB' function อยู่ในไฟล์นี้
+// import { formatTHB } from "../lib/utils";
+
+// นำเข้า Link หากคุณใช้ React Router
+// import { Link } from "react-router-dom";
+
+// --- Mockup Types and Utils for Demo ---
+// (ส่วนนี้ใช้เพื่อให้โค้ดตัวอย่างทำงานได้)
+type Product = { id: number; name: string; price: number };
+type Cart = { [key: number]: number };
+const formatTHB = (amount: number) => {
+  return new Intl.NumberFormat("th-TH", {
+    style: "currency",
+    currency: "THB",
+  }).format(amount);
+};
+// Mock Link component
+const Link = ({
+  to,
+  children,
+  className,
+  onClick,
+}: {
+  to: string;
+  children: React.ReactNode;
+  className: string;
+  onClick?: () => void;
+}) => (
+  <a href={to} className={className} onClick={onClick}>
+    {children}
+  </a>
+);
+// --- End of Mockup ---
 
 type Props = { cart: Cart; products: Product[]; onGoToTransport?: () => void };
 
-
 const Payment: React.FC<Props> = ({
-  cart = {},
-  products = [],
-  onGoToTransport, // (แก้ไข) รับ prop ใหม่
+  cart = { 1: 1, 2: 3 }, //ข้อมูลตัวอย่าง
+  products = [
+    //ข้อมูลตัวอย่าง
+    { id: 1, name: "Fiddle Leaf Fig", price: 1290 },
+    { id: 2, name: "Snake Plant", price: 390 },
+  ],
+  onGoToTransport,
 }) => {
   const [method, setMethod] = useState("visa");
   const [cardNumber, setCardNumber] = useState("");
@@ -17,7 +53,6 @@ const Payment: React.FC<Props> = ({
   const [cvc, setCvc] = useState("");
 
   // --- Calculate total ---
-  // ... (ส่วนคำนวณราคายังเหมือนเดิม) ...
   const entries = Object.entries(cart);
   const total = entries.reduce((sum, [id, qty]) => {
     const p = products.find((x) => x.id === Number(id));
@@ -31,29 +66,31 @@ const Payment: React.FC<Props> = ({
    * เป็นการเรียก onGoToTransport() เพื่อไปหน้า transport
    */
   const handleContinue = () => {
-    // ลบ alert("ชำระเงินสำเร็จ...") ออก
     // alert(`🌿 ชำระเงินสำเร็จ (${totalDisplay}) ด้วยช่องทาง: ${method.toUpperCase()}`);
 
     // เรียกฟังก์ชัน onGoToTransport ที่ส่งมาจาก Component แม่
     // เพื่อบอกให้ "ไปหน้า transport"
     if (onGoToTransport) {
       onGoToTransport();
+    } else {
+      // Fallback for demo
+      console.log("Proceeding to transport...");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-green-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-green-50 px-4 py-12">
       {/* ... (ปุ่มกลับหน้าแรกยังเหมือนเดิม) ... */}
       <a
         href="/"
         className="absolute right-8 top-8 flex items-center gap-2 px-4 py-2 
-                   bg-white border border-gray-200 rounded-full shadow-sm 
-                   hover:shadow-md hover:bg-pink-50 text-gray-700 
-                   transition-all duration-200 text-sm font-medium"
+                       bg-white border border-gray-200 rounded-full shadow-sm 
+                       hover:shadow-md hover:bg-pink-50 text-gray-700 
+                       transition-all duration-200 text-sm font-medium"
       >
         <span className="text-pink-500 text-lg">⬅</span> กลับหน้าแรก
       </a>
-      
+
       <div className="bg-white shadow-xl rounded-2xl w-full max-w-lg p-8">
         {/* ... (Header และ Order Summary ยังเหมือนเดิม) ... */}
         <div className="flex items-center justify-between mb-6">
@@ -97,15 +134,15 @@ const Payment: React.FC<Props> = ({
             รวมทั้งหมด: {totalDisplay}
           </h3>
         </div>
-        
+
         {/* ... (ส่วนเลือกช่องทางชำระเงินยังเหมือนเดิม) ... */}
         <h2 className="text-md font-semibold text-gray-700 mb-2">
           เลือกช่องทางการชำระเงิน
         </h2>
-        <div className="flex justify-around mb-6">
+        <div className="grid grid-cols-4 gap-4 mb-6">
           <button
             onClick={() => setMethod("visa")}
-            className={`border-2 rounded-lg p-2 transition ${
+            className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
               method === "visa"
                 ? "border-pink-500 bg-pink-50"
                 : "border-gray-200 hover:border-gray-400"
@@ -114,14 +151,14 @@ const Payment: React.FC<Props> = ({
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg"
               alt="Visa"
-              className="h-8"
-              onError={(e) => e.currentTarget.style.display = 'none'}
+              className="h-8 object-contain"
+              onError={(e) => (e.currentTarget.style.display = "none")}
             />
           </button>
 
           <button
             onClick={() => setMethod("mastercard")}
-            className={`border-2 rounded-lg p-2 transition ${
+            className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
               method === "mastercard"
                 ? "border-pink-500 bg-pink-50"
                 : "border-gray-200 hover:border-gray-400"
@@ -130,14 +167,14 @@ const Payment: React.FC<Props> = ({
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/960px-Mastercard-logo.svg.png"
               alt="Mastercard"
-              className="h-8"
-              onError={(e) => e.currentTarget.style.display = 'none'}
+              className="h-8 object-contain"
+              onError={(e) => (e.currentTarget.style.display = "none")}
             />
           </button>
 
           <button
             onClick={() => setMethod("paypal")}
-            className={`border-2 rounded-lg p-2 transition ${
+            className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
               method === "paypal"
                 ? "border-pink-500 bg-pink-50"
                 : "border-gray-200 hover:border-gray-400"
@@ -146,14 +183,14 @@ const Payment: React.FC<Props> = ({
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg"
               alt="PayPal"
-              className="h-8"
-              onError={(e) => e.currentTarget.style.display = 'none'}
+              className="h-8 object-contain"
+              onError={(e) => (e.currentTarget.style.display = "none")}
             />
           </button>
 
           <button
             onClick={() => setMethod("promptpay")}
-            className={`border-2 rounded-lg p-2 transition ${
+            className={`border-2 rounded-lg p-2 transition flex justify-center items-center ${
               method === "promptpay"
                 ? "border-pink-500 bg-pink-50"
                 : "border-gray-200 hover:border-gray-400"
@@ -162,19 +199,18 @@ const Payment: React.FC<Props> = ({
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png"
               alt="PromptPay"
-              className="h-8"
-              onError={(e) => e.currentTarget.style.display = 'none'}
+              className="h-8 object-contain"
+              onError={(e) => (e.currentTarget.style.display = "none")}
             />
           </button>
         </div>
-
 
         {/* Card info only for Visa/MasterCard */}
         {(method === "visa" || method === "mastercard") && (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleContinue(); // (แก้ไข) เรียก handleContinue
+              handleContinue(); // เรียก handleContinue
             }}
             className="space-y-4"
           >
@@ -222,6 +258,12 @@ const Payment: React.FC<Props> = ({
               </div>
             </div>
 
+            {/*
+             * (แก้ไข)
+             * เปลี่ยนจาก <Link> เป็น <button type="submit">
+             * เพื่อให้ปุ่มนี้ทำหน้าที่ "ส่งฟอร์ม" นี้อย่างถูกต้อง
+             * และใช้ className เดิมเพื่อให้ดีไซน์สวยงาม
+             */}
             <button
               type="submit"
               className="w-full py-3 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition"
@@ -239,12 +281,17 @@ const Payment: React.FC<Props> = ({
               {method === "promptpay" ? "PromptPay" : "PayPal"}{" "}
               เพื่อดำเนินการชำระเงิน
             </p>
-            
+
+            {/*
+             * (แก้ไข)
+             * ลบ type="submit" ที่ไม่จำเป็นออกจาก Link
+             */}
             <Link
               onClick={handleContinue}
               to="/delivery"
-              className="w-full py-3 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition"
-              > ยืนยันการชำระเงิน
+              className="w-full block py-3 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition"
+            >
+              ยืนยันการชำระเงิน
             </Link>
           </div>
         )}
@@ -254,4 +301,3 @@ const Payment: React.FC<Props> = ({
 };
 
 export default Payment;
-

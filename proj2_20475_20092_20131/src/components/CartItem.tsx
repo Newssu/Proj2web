@@ -1,3 +1,4 @@
+/* eslint-disable no-irregular-whitespace */
 import React from "react";
 import type { Product } from "../lib/types";
 import { formatTHB } from "../lib/utils";
