@@ -9,6 +9,8 @@ import type { Cart } from "./lib/types";
 import PlantDictionary from "./components/PlantDictionary";
 import "./index.css";
 import Delivery from "./components/Delivery";
+import Register from "./components/Register";
+
 
 // eslint-disable-next-line react-refresh/only-export-components
 function RootRoutes() {
@@ -30,6 +32,8 @@ function RootRoutes() {
       <Route path="/dictionary" element={<PlantDictionary />} />
       <Route path="/delivery" element={<Delivery />} />
       <Route path="/app" element={<App />} />
+      <Route path="/register" element={<Register/>} />
+      
       {/* เส้นทางอื่น ๆ ที่ไม่ต้องใช้ props ใส่เพิ่มได้ */}
     </Routes>
   );

@@ -282,10 +282,6 @@ const Payment: React.FC<Props> = ({
               เพื่อดำเนินการชำระเงิน
             </p>
 
-            {/*
-             * (แก้ไข)
-             * ลบ type="submit" ที่ไม่จำเป็นออกจาก Link
-             */}
             <Link
               onClick={handleContinue}
               to="/delivery"
