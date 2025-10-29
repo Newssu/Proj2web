@@ -16,7 +16,8 @@ import Footer from "./components/Footer";
 import CartDrawer from "./components/CartDrawer";
 import RecommendModal from "./components/RecommendModal";
 import LoginModal from "./components/LoginModal";
-import Payment from "./components/Payment"; // ✅ import payment page
+import Payment from "./components/Payment"; 
+
 
 const App: React.FC = () => {
   // --------- STATE ---------
@@ -203,8 +204,10 @@ const App: React.FC = () => {
       <Route
         path="/payment"
         element={<Payment cart={cart} products={productList} />}
+        
       />
-    </Routes>
+      </Routes>
+    
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { Cart, Product } from "../lib/types";
 import { formatTHB } from "../lib/utils";
+import { Link } from "react-router-dom";
 
 type Props = { cart: Cart; products: Product[]; onGoToTransport?: () => void };
 
@@ -238,12 +239,13 @@ const Payment: React.FC<Props> = ({
               {method === "promptpay" ? "PromptPay" : "PayPal"}{" "}
               เพื่อดำเนินการชำระเงิน
             </p>
-            <button
-              onClick={handleContinue} // (แก้ไข) เรียก handleContinue
+            
+            <Link
+              onClick={handleContinue}
+              to="/delivery"
               className="w-full py-3 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition"
-            >
-              ยืนยันการชำระเงิน
-            </button>
+              > ยืนยันการชำระเงิน
+            </Link>
           </div>
         )}
       </div>
