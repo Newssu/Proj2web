@@ -2,16 +2,8 @@ import React, { useState } from "react";
 import type { Cart, Product } from "../lib/types";
 import { formatTHB } from "../lib/utils";
 
-type Props = {
-  cart?: Cart;
-  products?: Product[];
-  /**
-   * (แก้ไข) เปลี่ยนชื่อ Prop
-   * ฟังก์ชันที่จะถูกเรียกเมื่อผู้ใช้กด "ยืนยันการชำระเงิน"
-   * เพื่อนำทางไปยังหน้า transport.tsx
-   */
-  onGoToTransport: () => void;
-};
+type Props = { cart: Cart; products: Product[]; onGoToTransport?: () => void };
+
 
 const Payment: React.FC<Props> = ({
   cart = {},
