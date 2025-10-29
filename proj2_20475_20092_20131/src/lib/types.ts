@@ -2,8 +2,11 @@ export type Product = {
   id: number;
   name: string;
   price: number;
-  img: string;
-  tag: string;
+  stock?: number;
+  tag?: string;
+  img?: string;        // ✅ เดิมใน frontend
+  imageUrl?: string;   // ✅ จาก backend
+  description?: string;
 };
 
 export type Cart = Record<number, number>;

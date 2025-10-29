@@ -4,9 +4,18 @@ import { formatTHB } from "../lib/utils";
 type Props = { product: Product; onAddToCart: (id: number) => void; };
 const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => (
   <div className="rounded-2xl bg-white/80 dark:bg-gray-800/80 border border-emerald-100/70 dark:border-gray-800 overflow-hidden hover:shadow-xl transition">
-    <div className="aspect-square">
-      <img src={product.img} alt={product.name} className="w-full h-full object-cover"/>
+    <div
+      className="w-full overflow-hidden rounded-xl bg-gray-100"
+      style={{ aspectRatio: '4 / 3' }}  // หรือ '1 / 1' ถ้าอยากให้สี่เหลี่ยมจัตุรัส
+    >
+      <img
+        src={product.imageUrl ?? product.img ?? ''}
+        alt={product.name}
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
     </div>
+
     <div className="p-3 space-y-1">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold">{product.name}</h4>
@@ -14,7 +23,7 @@ const ProductCard: React.FC<Props> = ({ product, onAddToCart }) => (
       </div>
       <p className="font-bold">{formatTHB(product.price)}</p>
       <button className="w-full rounded-xl bg-emerald-600 text-white py-2 font-semibold hover:bg-emerald-700"
-              onClick={() => onAddToCart(product.id)}>เพิ่มลงตะกร้า</button>
+        onClick={() => onAddToCart(product.id)}>เพิ่มลงตะกร้า</button>
     </div>
   </div>
 );

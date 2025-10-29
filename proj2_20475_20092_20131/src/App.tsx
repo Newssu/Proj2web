@@ -79,16 +79,13 @@ const App: React.FC = () => {
     setCurrentUser(null);
   };
 
-  // --------- DATA COMPOSITION ---------
-  // รวมสินค้าจาก DB + initialProducts และกันไม่ให้ซ้ำ id
-  const productList = useMemo(() => {
-    const remote = Array.isArray(remoteProducts) ? remoteProducts : [];
-    if (remote.length === 0) return initialProducts;
-    const supplement = initialProducts.filter(
-      (p) => !remote.some((r) => r.id === p.id)
-    );
-    return [...remote, ...supplement];
-  }, [remoteProducts]);
+const productList = useMemo(() => {
+  const remote = Array.isArray(remoteProducts) ? remoteProducts : [];
+  if (remote.length === 0) return initialProducts;
+  const supplement = initialProducts.filter(p => !remote.some(r => r.id === p.id));
+  return [...remote, ...supplement];
+}, [remoteProducts]);
+
 
   const filteredProducts = useMemo(() => {
     let list = [...productList];
@@ -112,9 +109,17 @@ const App: React.FC = () => {
 
   // --------- EFFECTS ---------
   useEffect(() => {
-    const saved = localStorage.getItem("user");
-    if (saved) setCurrentUser(JSON.parse(saved));
-  }, []);
+  api.get("/products")
+    .then((res) => {
+      const data = Array.isArray(res.data) ? res.data : [];
+      const normalized = data.map((p: any) => ({
+        ...p,
+        img: p.img ?? p.imageUrl ?? "",   // ✅ เติม img ให้เสมอ
+      }));
+      setRemoteProducts(normalized);
+    })
+    .catch(() => setRemoteProducts(null));
+}, []);
 
   useEffect(() => {
     api
